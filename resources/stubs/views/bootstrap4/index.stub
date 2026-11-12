@@ -1,0 +1,100 @@
+@extends('layouts.'.config('newsletter-templates.layout_file'))
+
+@section('content')
+
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="row">
+                            <div class="col-sm-6">
+                                @lang('newsletter-templates::templates.menu_title')
+                            </div>
+                            <div class="col-sm-6 text-right">
+                                <a href="{{ route('DummyRoute.create') }}" class="btn btn-success text-white btn-sm pull-right">
+                                    <i class="glyphicon glyphicon-plus"></i> @lang('newsletter-templates::crud.create_button')
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-body">
+
+                        @include('newsletter-templates::notifications')
+                        @if($templates->isEmpty())
+                            @lang('newsletter-templates::crud.no_entries')
+                        @else
+                            <table class="table table-striped">
+                                <thead>
+                                <th>#</th>
+                                <th>@lang('newsletter-templates::templates.template_name')</th>
+                                @if(config('newsletter-templates.multi_layout'))
+                                <th>@lang('newsletter-templates::templates.layout')</th>
+                                @endif
+                                <th></th>
+                                </thead>
+                                <tbody>
+                                @foreach($templates as $template)
+                                    <tr>
+                                        <td>{{$template->id}}</td>
+                                        <td>{{$template->template_name}}</td>
+                                        @if(config('newsletter-templates.multi_layout'))
+                                        <td>{{$template->layout}}</td>
+                                        @endif
+                                        <td>
+
+                                            <div class="btn-group float-right" role="group">
+
+                                                <div class="btn-group" role="group">
+                                                    <button class="btn btn-info text-white btn-sm dropdown-toggle" type="button" id="dropdownMenu2" data-toggle="dropdown" aria-hasgroup="true" aria-expanded="true">
+                                                        <i class="glyphicon glyphicon-edit"></i> @lang('newsletter-templates::templates.preview')
+                                                        <span class="caret"></span>
+                                                    </button>
+                                                    <div class="dropdown-menu" aria-labelledby="dropdownMenu2">
+
+                                                        <a href="{{ route('DummyRoute.show', $template->id) }}" class="dropdown-item" target="_blank">
+                                                            <i class="glyphicon glyphicon-search"></i> @lang('newsletter-templates::templates.preview')
+                                                        </a>
+                                                        <a href="{{ route('DummyRoute.send-preview', $template->id) }}" class="dropdown-item"
+                                                           @if(!config('newsletter-templates.preview_email')) disabled title="@lang('newsletter-templates::crud.no_preview_recipient')" @endif>
+                                                            <i class="glyphicon glyphicon-envelope"></i> @lang('newsletter-templates::templates.send_preview')
+                                                        </a>
+
+                                                    </div>
+
+                                                    <a class="btn btn-sm btn-success" href="{{ route('DummyRoute.edit',$template->id) }}">
+                                                        <i class="glyphicon glyphicon-pencil"></i> @lang('newsletter-templates::crud.edit')
+                                                    </a>
+
+
+                                                </div>
+
+                                                <div class="btn-group float-right" role="group">
+
+                                                    <form class="btn-group"
+                                                          action="{{ route('DummyRoute.destroy',$template->id) }}"
+                                                          method="POST">
+                                                        {{ csrf_field() }}
+                                                        {{ method_field('DELETE') }}
+                                                        <button class="btn btn-sm btn-danger"
+                                                                type="submit"><i class="glyphicon glyphicon-trash"></i> @lang('newsletter-templates::crud.delete')</button>
+                                                    </form>
+                                                </div>
+
+                                            </div>
+
+
+                                        </td>
+                                    </tr>
+                                @endforeach
+                                </tbody>
+                            </table>
+                        @endif
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+@stop

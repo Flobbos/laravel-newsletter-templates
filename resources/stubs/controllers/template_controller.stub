@@ -1,0 +1,168 @@
+<?php
+
+namespace DummyNamespace;
+
+use App\Http\Controllers\Controller;
+use Exception;
+use Flobbos\NewsletterTemplates\Contracts\TemplateContract;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
+
+class DummyClass extends Controller
+{
+    protected $templates;
+
+    public function __construct(TemplateContract $templates)
+    {
+        $this->templates = $templates;
+    }
+
+    /**
+     * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function index()
+    {
+        return view('DummyViewPath.index')->withTemplates($this->templates->get());
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function create()
+    {
+        try {
+            $layouts = $this->templates->getLayouts();
+
+            return view('DummyViewPath.create')->withLayouts($layouts);
+        } catch (Exception $ex) {
+            return redirect()->route('DummyRoute.index')->withErrors($ex->getMessage());
+        }
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function store(Request $request)
+    {
+        $request->validate($this->templates->getValidationRulesStore());
+
+        $templateData = $request->except(['_token']);
+
+        if (! config('newsletter-templates.multi_layout')) {
+            $templateData['layout'] = config('newsletter-templates.base_layout', 'base');
+        }
+
+        $templateData['template_name'] = Str::slug($templateData['template_name']);
+        $template = $this->templates->create($templateData);
+
+        $this->templates->compile($template->template_name, [
+            'template' => $template,
+        ]);
+
+        return redirect()->route('DummyRoute.index')->withMessage(trans('newsletter-templates::templates.template_created'));
+    }
+
+    /**
+     * Display the specified resource.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function show($id)
+    {
+        try {
+            $template = $this->templates->find($id);
+            $this->templates->compile($template->template_name, [
+                'template' => $template,
+            ]);
+
+            return File::get($template->template_file_path);
+        } catch (Exception $ex) {
+            return redirect()->back()->withErrors($ex->getMessage());
+        }
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function edit($id)
+    {
+        try {
+            $layouts = $this->templates->getLayouts();
+
+            return view('DummyViewPath.edit')
+                ->withLayouts($layouts)
+                ->withTemplate($this->templates->find($id));
+        } catch (Exception $ex) {
+            return redirect()->route('DummyRoute.index')->withErrors($ex->getMessage());
+        }
+    }
+
+    /**
+     * Update the specified resource in storage.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function update(Request $request, $id)
+    {
+        $request->validate($this->templates->getValidationRulesUpdate($id));
+
+        $templateData = $request->except(['_token']);
+
+        if (! config('newsletter-templates.multi_layout')) {
+            $templateData['layout'] = config('newsletter-templates.base_layout', 'base');
+        }
+
+        $template = $this->templates->update($id, $templateData, true);
+
+        $this->templates->compile($template->template_name, [
+            'template' => $template,
+        ]);
+
+        return redirect()->route('DummyRoute.index')->withMessage(trans('newsletter-templates::templates.template_updated'));
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function destroy($id)
+    {
+        try {
+            $this->templates->delete($id);
+
+            return redirect()->route('DummyRoute.index')->withMessage(trans('newsletter-templates::crud.record_deleted'));
+        } catch (Exception $ex) {
+            return redirect()->route('DummyRoute.index')->withErrors($ex->getMessage());
+        }
+    }
+
+    public function sendPreview($id)
+    {
+        $template = $this->templates->find($id);
+
+        Mail::send([], [], function ($message) use ($template) {
+            $message->to(config('newsletter-templates.preview_email'));
+            $message->subject(config('newsletter-templates.preview_subject'));
+            $message->html(File::get($template->template_file_path));
+        });
+
+        return redirect()->back()->withMessage(trans('newsletter-templates::templates.preview_sent', [
+            'email' => config('newsletter-templates.preview_email'),
+        ]));
+    }
+}
