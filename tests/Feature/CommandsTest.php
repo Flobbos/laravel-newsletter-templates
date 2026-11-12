@@ -77,3 +77,36 @@ it('writes a controller against the package contract', function () {
         ->and($controller)->toContain('newsletter-templates.preview_email')
         ->and($controller)->toContain('getValidationRulesUpdate($id)');
 });
+
+it('does not overwrite published files on a later install', function () {
+    $config = config_path('newsletter-templates.php');
+    File::ensureDirectoryExists(dirname($config));
+    File::put($config, "<?php\n\nreturn ['asset_path' => 'keep-me'];\n");
+
+    $this->artisan('newsletter-templates:install')
+        ->expectsConfirmation('Publish config, migrations, base layout, and model?', 'yes')
+        ->expectsConfirmation('Create template directories and the public storage link?', 'yes')
+        ->assertSuccessful();
+
+    expect(File::get($config))->toContain("'asset_path' => 'keep-me'");
+
+    File::delete($config);
+});
+
+it('fails when the layout already exists', function () {
+    $base = resource_path('newsletter-templates/layouts/base');
+    File::ensureDirectoryExists($base);
+    File::put($base.'/base.blade.php', '<mjml></mjml>');
+    File::put($base.'/base.scss', '');
+    File::deleteDirectory(resource_path('newsletter-templates/layouts/twice'));
+
+    $this->artisan('newsletter-templates:layout', [
+        'name' => 'twice',
+        '--no-interaction' => true,
+    ])->assertSuccessful();
+
+    $this->artisan('newsletter-templates:layout', [
+        'name' => 'twice',
+        '--no-interaction' => true,
+    ])->assertFailed();
+});

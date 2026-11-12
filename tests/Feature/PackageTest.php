@@ -23,10 +23,12 @@ it('builds a public image url from the asset path', function () {
     config(['newsletter-templates.asset_path' => 'newsletter-assets']);
 
     expect(newsletter_image('My Template', 'logo.png'))
-        ->toBe('http://localhost/newsletter-assets/my-template/assets/images/logo.png');
+        ->toBe('http://localhost/storage/newsletter-assets/my-template/images/logo.png');
 });
 
 it('exposes the compiled html url and filesystem path', function () {
+    config(['newsletter-templates.asset_path' => 'newsletter-assets']);
+
     $template = NewsletterTemplate::query()->create([
         'template_name' => 'welcome',
         'layout' => 'base',
@@ -37,4 +39,13 @@ it('exposes the compiled html url and filesystem path', function () {
         ->toBe('http://localhost/storage/newsletter-assets/welcome/welcome.html')
         ->and($template->template_file_path)
         ->toBe(storage_path('app/public/newsletter-assets/welcome/welcome.html'));
+
+    $named = NewsletterTemplate::query()->create([
+        'template_name' => 'My Template',
+        'layout' => 'base',
+        'title' => 'Mine',
+    ]);
+
+    expect($named->template_file_url)
+        ->toBe('http://localhost/storage/newsletter-assets/my-template/my-template.html');
 });

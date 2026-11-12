@@ -8,6 +8,8 @@ use InvalidArgumentException;
 
 class ViewCommand extends GeneratorCommand
 {
+    use ExitsOnFailure;
+
     protected $signature = 'newsletter-templates:views {path} {--route=admin.newsletter-templates}';
 
     protected $description = 'Generate newsletter template views';

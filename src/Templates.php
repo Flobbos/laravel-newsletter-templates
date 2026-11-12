@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Str;
 use Illuminate\View\FileViewFinder;
+use InvalidArgumentException;
 use Symfony\Component\Finder\Finder;
 
 class Templates implements TemplateContract
@@ -96,7 +97,7 @@ class Templates implements TemplateContract
             return false;
         }
 
-        $name = Str::slug((string) $model->getAttribute('template_name'));
+        $name = $this->safeName((string) $model->getAttribute('template_name'));
         $this->disk->deleteDirectory($name);
         File::deleteDirectory($this->templatePath($name));
 
@@ -122,6 +123,7 @@ class Templates implements TemplateContract
 
     public function compile(string $templateName, array $data = []): bool
     {
+        $templateName = $this->safeName($templateName);
         $this->setTemplate($templateName);
 
         $templateModel = Arr::get($data, 'template');
@@ -133,6 +135,8 @@ class Templates implements TemplateContract
         if (! is_string($layout) || $layout === '') {
             $layout = (string) config('newsletter-templates.base_layout', 'base');
         }
+
+        $layout = $this->safeName($layout);
 
         if (! File::exists($this->templatePath($templateName)) || $layoutChanged) {
             $this->generateTemplate($layout);
@@ -252,11 +256,13 @@ class Templates implements TemplateContract
         File::copyDirectory($stubPath, $destPath);
 
         foreach (File::allFiles($destPath) as $file) {
-            if (! str_contains($file->getFilename(), $layout)) {
+            $filename = $file->getFilename();
+
+            if (! str_starts_with($filename, $layout.'.') && ! str_starts_with($filename, $layout.'-')) {
                 continue;
             }
 
-            $renamed = $file->getPath().'/'.str_replace($layout, Str::slug((string) $this->template), $file->getFilename());
+            $renamed = $file->getPath().'/'.$this->template.substr($filename, strlen($layout));
             File::move($file->getPathname(), $renamed);
         }
     }
@@ -328,5 +334,20 @@ class Templates implements TemplateContract
         }
 
         return rtrim($basePath, '/').'/'.$name;
+    }
+
+    private function safeName(string $name): string
+    {
+        if ($name === '' || str_contains($name, '..') || str_contains($name, '/') || str_contains($name, '\\') || str_contains($name, "\0")) {
+            throw new InvalidArgumentException('Invalid template or layout name.');
+        }
+
+        $slug = Str::slug($name);
+
+        if ($slug === '') {
+            throw new InvalidArgumentException('Invalid template or layout name.');
+        }
+
+        return $slug;
     }
 }

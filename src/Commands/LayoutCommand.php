@@ -7,6 +7,8 @@ use Illuminate\Support\Str;
 
 class LayoutCommand extends GeneratorCommand
 {
+    use ExitsOnFailure;
+
     protected $signature = 'newsletter-templates:layout {name} {--fresh}';
 
     protected $description = 'Generate an MJML layout from the base layout';

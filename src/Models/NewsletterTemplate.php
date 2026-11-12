@@ -4,6 +4,7 @@ namespace Flobbos\NewsletterTemplates\Models;
 
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class NewsletterTemplate extends Model
 {
@@ -55,7 +56,7 @@ class NewsletterTemplate extends Model
 
     private function storedName(): string
     {
-        return (string) $this->getAttribute('template_name');
+        return Str::slug((string) $this->getAttribute('template_name'));
     }
 
     private function compiledUrl(): string

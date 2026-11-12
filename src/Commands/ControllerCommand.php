@@ -6,6 +6,8 @@ use Illuminate\Console\GeneratorCommand;
 
 class ControllerCommand extends GeneratorCommand
 {
+    use ExitsOnFailure;
+
     protected $signature = 'newsletter-templates:controller {name} {--route=admin.newsletter-templates}';
 
     protected $description = 'Generate the newsletter template controller';

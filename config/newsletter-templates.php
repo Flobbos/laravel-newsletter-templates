@@ -6,7 +6,7 @@ return [
 
     'api_url' => 'https://blinky.ultrabold.de/api/mjml/generate',
 
-    'api_token' => '',
+    'api_token' => env('NEWSLETTER_TEMPLATES_API_TOKEN', ''),
 
     // Executable used when compiler=local. SCSS companions are inlined as mj-style;
     // Sass itself is only compiled by the remote endpoint.

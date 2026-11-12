@@ -20,7 +20,7 @@ php artisan migrate
 |---|---|---|
 | `compiler` | `remote` | `remote` or `local` |
 | `api_url` | blinky MJML endpoint | POST target for the remote compiler |
-| `api_token` | empty | Bearer token |
+| `api_token` | `NEWSLETTER_TEMPLATES_API_TOKEN` | Bearer token |
 | `mjml_binary` | `mjml` | Used when `compiler=local` |
 | `layout_path` | `newsletter-templates/layouts` | Under `resources/` |
 | `template_storage_path` | `app/newsletter-templates/templates` | Source files, under `storage/` |
@@ -59,7 +59,7 @@ Images in a template:
 <img src="{{ newsletter_image($templateName, 'logo.png') }}" alt="">
 ```
 
-That URL follows the historical helper shape: `/{asset_path}/{template}/assets/images/{file}`. Files copied during compile land on the public disk at `{template}/images`.
+That is the public URL of the file compile copies onto the `newsletter_templates` disk: `/storage/{asset_path}/{template}/images/{file}`.
 
 ## Generators
 

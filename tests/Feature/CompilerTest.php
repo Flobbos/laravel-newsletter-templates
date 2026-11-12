@@ -3,6 +3,7 @@
 use Flobbos\NewsletterTemplates\Contracts\TemplateContract;
 use Flobbos\NewsletterTemplates\Exceptions\CompilerException;
 use Flobbos\NewsletterTemplates\Exceptions\NoLayoutsException;
+use Flobbos\NewsletterTemplates\Models\NewsletterTemplate;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Process;
@@ -85,6 +86,45 @@ it('compiles with the local mjml binary and inlines companion styles', function 
             && str_contains((string) $process->input, '<mj-style>')
             && str_contains((string) $process->input, 'h1{color:red}');
     });
+});
+
+it('stores a slugged template name and leaves unrelated stylesheets alone', function () {
+    Http::fake([
+        'https://compiler.test/generate' => Http::response('<html>named</html>', 200),
+    ]);
+
+    config([
+        'newsletter-templates.api_url' => 'https://compiler.test/generate',
+        'newsletter-templates.api_token' => 'secret-token',
+    ]);
+
+    prepareBaseLayout();
+    $layout = resource_path(config('newsletter-templates.layout_path').'/base');
+    File::put($layout.'/database.scss', '$keep: true;');
+
+    $template = NewsletterTemplate::query()->create([
+        'template_name' => 'My Template',
+        'layout' => 'base',
+        'title' => 'Mine',
+    ]);
+
+    expect(app(TemplateContract::class)->compile('My Template'))->toBeTrue();
+
+    $directory = storage_path((string) config('newsletter-templates.template_storage_path').'/my-template');
+
+    expect(File::get(compiledHtmlPath('my-template')))->toBe('<html>named</html>')
+        ->and(File::exists($directory.'/database.scss'))->toBeTrue()
+        ->and(File::exists($directory.'/datamy-template.scss'))->toBeFalse();
+
+    expect(app(TemplateContract::class)->delete($template->id))->toBeTrue()
+        ->and(File::exists(compiledHtmlPath('my-template')))->toBeFalse();
+});
+
+it('refuses a template name that leaves the template directory', function () {
+    prepareBaseLayout();
+
+    expect(fn () => app(TemplateContract::class)->compile('../secret'))
+        ->toThrow(InvalidArgumentException::class);
 });
 
 it('throws when the layout is missing', function () {

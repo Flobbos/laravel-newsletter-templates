@@ -44,7 +44,6 @@ class InstallCommand extends Command
         ] as $tag => $message) {
             Artisan::call('vendor:publish', [
                 '--tag' => $tag,
-                '--force' => true,
             ]);
             $this->info($message);
         }
